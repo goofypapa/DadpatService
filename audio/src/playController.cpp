@@ -31,6 +31,8 @@ bool playController::play( const int p_playId, const wav_t * p_wav )
         return false;
     }
 
+    info( "get pcmHandle" );
+
     play_controller_t * t_playControll = ( play_controller_t * )malloc( sizeof( play_controller_t ) );
     t_playControll->pcm_handle = t_pcmHandle;
     t_playControll->play_state = Before;
@@ -42,49 +44,54 @@ bool playController::play( const int p_playId, const wav_t * p_wav )
 
 
     pthread_t t_threadId;
-    pthread_create( &t_threadId, NULL, [](void * p_para)->void *{
-
-        play_controller_t * t_playControll = (play_controller_t *)p_para;
-
-        t_playControll->play_state = Playing;
-        char * t_buffer = NULL;
-        int t_frames = 0;
-        int ret = -1;
-        pcm_handle_t * t_pcmHandle = t_playControll->pcm_handle;
-        while( true )
-        {
-            if( t_playControll->dataSize <= t_playControll->playDataSize )
-            {
-                break;
-            }
-
-            t_buffer = t_playControll->data + t_playControll->playDataSize;
-            t_frames = t_playControll->dataSize - t_playControll->playDataSize >= t_pcmHandle->buffer_size ? t_pcmHandle->frames : ( t_playControll->dataSize - t_playControll->playDataSize ) / t_playControll->datablock;
-            while( ( ret = snd_pcm_writei( t_pcmHandle->handle, t_buffer, t_frames ) ) < 0 )
-            {
-                if( ret == -EPIPE )
-                {
-                    err( "underrun occurred" );
-                    snd_pcm_prepare(t_pcmHandle->handle);
-                }
-                else if( ret < 0 )
-                {
-                    err( "error from writei: " << snd_strerror(ret) );
-                }
-            }
-
-            t_playControll->playDataSize += ret * t_playControll->datablock;
-        }
-
-        t_playControll->play_state = End;
-
-        play_controller_t * t_tmp = t_playControll;
-        stop( &t_tmp );
-
-    }, (void *)t_playControll );
-
+    pthread_create( &t_threadId, NULL, _threadFunc, (void *)t_playControll );
 
     return true;
+}
+
+
+void * playController::_threadFunc( void * p_param )
+{
+    play_controller_t * t_playControll = (play_controller_t *)p_param;
+
+    t_playControll->play_state = Playing;
+    char * t_buffer = NULL;
+    int t_frames = 0;
+    int ret = -1;
+    pcm_handle_t * t_pcmHandle = t_playControll->pcm_handle;
+
+    info( "in play thread" );
+
+    while( true )
+    {
+        if( t_playControll->dataSize <= t_playControll->playDataSize )
+        {
+            break;
+        }
+
+        t_buffer = t_playControll->data + t_playControll->playDataSize;
+        t_frames = t_playControll->dataSize - t_playControll->playDataSize >= t_pcmHandle->buffer_size ? t_pcmHandle->frames : ( t_playControll->dataSize - t_playControll->playDataSize ) / t_playControll->datablock;
+        while( ( ret = snd_pcm_writei( t_pcmHandle->handle, t_buffer, t_frames ) ) < 0 )
+        {
+            if( ret == -EPIPE )
+            {
+                err( "underrun occurred" );
+                snd_pcm_prepare(t_pcmHandle->handle);
+            }
+            else if( ret < 0 )
+            {
+                err( "error from writei: " << snd_strerror(ret) );
+            }
+        }
+
+        t_playControll->playDataSize += ret * t_playControll->datablock;
+    }
+
+    t_playControll->play_state = End;
+
+    play_controller_t * t_tmp = t_playControll;
+    stop( &t_tmp );
+    return NULL;
 }
 
 

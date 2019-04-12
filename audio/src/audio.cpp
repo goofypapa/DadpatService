@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstring>
 #include "playController.h"
+#include "log.h"
 
 
 int audio::sm_audioId = 0;
@@ -118,6 +119,8 @@ int audio::play( int p_audioId, int p_playGroup )
     {
         return -1;
     }
+
+    info( "find audio source" );
 
     return playController::play( t_it->first, t_it->second );
 }

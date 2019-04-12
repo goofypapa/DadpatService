@@ -29,6 +29,8 @@ public:
 
 private:
 
+    static void * _threadFunc( void * p_param );
+
     static bool stop( play_controller_t ** p_playController );
 
     static std::map<int, play_controller_t *> sm_playControllPoll;

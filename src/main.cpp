@@ -37,7 +37,10 @@ int main( int argc, char ** argv )
             break;
         }
 
+
         int t_id = atoi( buffer );
+
+        info( "try play " << t_id );
 
         audio::play( t_id );
 
