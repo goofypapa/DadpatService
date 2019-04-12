@@ -2,6 +2,7 @@
 #define __SERIAL_H__
 
 #include <vector>
+#include <cstddef>
 // #include <queue>
 // #include <map>
 

@@ -217,7 +217,7 @@ int serial::set_opt(int fd,int nSpeed,int nBits,char nEvent,int nStop)
 
     if(tcsetattr(fd,TCSANOW,&newtio)!=0)
     {
-        perror("com set error\n");
+        err("com set error");
         return -1;
     }
     return 0;

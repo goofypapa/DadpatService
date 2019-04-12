@@ -9,7 +9,7 @@ set(DADPATSERVICE_VERSION_FULL ${DADPATSERVICE_VERSION}.${DADPATSERVICE_VERSION_
 
 project(DadpatService VERSION ${DADPATSERVICE_VERSION})
 
-option(X86_64 "编译x86_64架构程序" ON)
+option(X86_64 "编译x86_64架构程序" OFF)
 
 set(CMAKE_C_COMPILER arm-linux-gcc)
 set(CMAKE_CXX_COMPILER arm-linux-g++)
