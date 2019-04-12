@@ -1,7 +1,7 @@
 #include "audio.h"
 #include <iostream>
 #include <cstring>
-#include "playController.h"
+#include "play_controller.h"
 #include "log.h"
 
 
@@ -15,6 +15,13 @@ pthread_mutex_t audio::sm_cacheUncacheMutex;
 bool audio::init( void )
 {
     pthread_mutex_init( &sm_cacheUncacheMutex, NULL );
+
+    if( !audioPcmInitPcmPoll() )
+    {
+        return false;
+    }
+
+    return true;
 }
 
 int audio::cache( const std::string & p_audioFile )

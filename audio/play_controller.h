@@ -2,7 +2,7 @@
 #define __PLAY_CONTROLLER_H__
 
 #include "wav.h"
-#include "audioPcm.h"
+#include "audio_pcm.h"
 #include <map>
 #include <queue>
 
@@ -31,7 +31,7 @@ private:
 
     static void * _threadFunc( void * p_param );
 
-    static bool stop( play_controller_t ** p_playController );
+    static bool playEnd( play_controller_t ** p_playController );
 
     static std::map<int, play_controller_t *> sm_playControllPoll;
 };

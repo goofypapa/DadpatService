@@ -1,4 +1,4 @@
-#include "audioPcm.h"
+#include "audio_pcm.h"
 #include "log.h"
 
 #define PCM_POLL_MAX_COUNT 6
@@ -19,7 +19,6 @@ bool audioPcmInitPcmPoll( void )
 
     while( s_audioPcmPool.size() < PCM_POLL_MAX_COUNT )
     {
-        info( "-------------> " << s_audioPcmPool.size() );
         t_pcm_handle = _openPcm( PCM_DEFAULT_BIT, PCM_DEFAULT_DATABLOCK, PCM_DEFAULT_RATE, PCM_DEFAULT_CHANNELS );
         assert( t_pcm_handle );
         s_audioPcmPool.push( t_pcm_handle );
@@ -183,9 +182,7 @@ bool closePcm( pcm_handle_t ** p_pcm_handle )
         t_pcm = NULL;
     }
 
-    pcm_handle_t * t_pcm_handle = _openPcm( PCM_DEFAULT_BIT, PCM_DEFAULT_DATABLOCK, PCM_DEFAULT_RATE, PCM_DEFAULT_CHANNELS );
-    assert( t_pcm_handle );
-    s_audioPcmPool.push( t_pcm_handle );
+    audioPcmInitPcmPoll();
 
     return true;
 }

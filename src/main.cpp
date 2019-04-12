@@ -1,7 +1,8 @@
 #include <iostream>
 #include "audio.h"
 #include "log.h"
-#include "audioPcm.h"
+#include "audio_pcm.h"
+#include "serial.h"
 
 int main( int argc, char ** argv )
 {
@@ -9,7 +10,17 @@ int main( int argc, char ** argv )
 
     info( "start" );
 
-    assert( audioPcmInitPcmPoll() );
+    if( !audio::init() )
+    {
+        err( "audio init final" );
+        return 0;
+    }
+
+    if( !serial::init() )
+    {
+        err( "serial init final" );
+        return 0;
+    }
 
     int t_audiooId = audio::cache("audios/djembe/B.wav");
 

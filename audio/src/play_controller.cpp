@@ -1,5 +1,5 @@
-#include "playController.h"
-#include "audioPcm.h"
+#include "play_controller.h"
+#include "audio_pcm.h"
 #include "log.h"
 
 #include <pthread.h>
@@ -44,7 +44,15 @@ bool playController::play( const int p_playId, const wav_t * p_wav )
 
 
     pthread_t t_threadId;
-    pthread_create( &t_threadId, NULL, _threadFunc, (void *)t_playControll );
+    int t_hreadId = pthread_create( &t_threadId, NULL, _threadFunc, (void *)t_playControll );
+
+    if( t_hreadId )
+    {
+        err( "pthread_create final" );
+
+        playEnd( &t_playControll );
+        return false;
+    }
 
     return true;
 }
@@ -90,12 +98,12 @@ void * playController::_threadFunc( void * p_param )
     t_playControll->play_state = End;
 
     play_controller_t * t_tmp = t_playControll;
-    stop( &t_tmp );
+    playEnd( &t_tmp );
     return NULL;
 }
 
 
-bool playController::stop( play_controller_t ** p_playController )
+bool playController::playEnd( play_controller_t ** p_playController )
 {
     play_controller_t * t_playController = *p_playController;
 
