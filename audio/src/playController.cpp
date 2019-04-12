@@ -2,21 +2,21 @@
 #include "audioPcm.h"
 #include "log.h"
 
-#include <thread>
+#include <pthread.h>
 
 
 std::map<int, playController::play_controller_t *> playController::sm_playControllPoll;
 
 bool playController::play( const int p_playId, const wav_t * p_wav )
 {
-    auto t_it = sm_playControllPoll.find( p_playId );
+    std::map<int, playController::play_controller_t *>::iterator t_it = sm_playControllPoll.find( p_playId );
 
     int channels = p_wav->format.channels;
     int rate = p_wav->format.samples_per_sec;
     int bit = p_wav->format.bits_per_sample;
     int datablock = p_wav->format.block_align;
 
-    pcm_handle_t * t_pcmHandle = nullptr;
+    pcm_handle_t * t_pcmHandle = NULL;
 
     if( t_it != sm_playControllPoll.end() )
     {
@@ -40,9 +40,14 @@ bool playController::play( const int p_playId, const wav_t * p_wav )
     t_playControll->dataSize = p_wav->data_size;
     t_playControll->playDataSize = 0;
 
-    std::thread( [t_playControll](){
-        t_playControll->play_state = PlayState::Playing;
-        char * t_buffer = nullptr;
+
+    pthread_t t_threadId;
+    pthread_create( &t_threadId, NULL, [](void * p_para)->void *{
+
+        play_controller_t * t_playControll = (play_controller_t *)p_para;
+
+        t_playControll->play_state = Playing;
+        char * t_buffer = NULL;
         int t_frames = 0;
         int ret = -1;
         pcm_handle_t * t_pcmHandle = t_playControll->pcm_handle;
@@ -71,12 +76,12 @@ bool playController::play( const int p_playId, const wav_t * p_wav )
             t_playControll->playDataSize += ret * t_playControll->datablock;
         }
 
-        t_playControll->play_state = PlayState::End;
+        t_playControll->play_state = End;
 
         play_controller_t * t_tmp = t_playControll;
         stop( &t_tmp );
 
-    } ).detach();
+    }, (void *)t_playControll );
 
 
     return true;
@@ -95,7 +100,7 @@ bool playController::stop( play_controller_t ** p_playController )
     closePcm( &t_playController->pcm_handle );
 
     free( t_playController );
-    t_playController = nullptr;
+    t_playController = NULL;
 
     return true;
 }

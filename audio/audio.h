@@ -4,11 +4,14 @@
 #include "wav.h"
 #include <string>
 #include <map>
-#include <mutex>
+#include <pthread.h>
 
 class audio
 {
 public:
+
+    static bool init( void );
+
     static int cache( const std::string & p_audioFile );
 
     static bool uncache( const int p_audioId );
@@ -28,7 +31,7 @@ public:
 private:
 
     static int sm_audioId;
-    static std::mutex sm_cacheUncacheMutex;
+    static pthread_mutex_t sm_cacheUncacheMutex;
     
     static std::map< int, wav_t * > sm_audioCachePool;
     static std::map< std::string, int > sm_audioPathCachePool;

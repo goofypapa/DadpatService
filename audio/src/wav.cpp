@@ -1,5 +1,7 @@
 #include "wav.h"
 #include "log.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <cstring>
 
 wav_t * openWav( const char * p_filePath )
@@ -8,7 +10,7 @@ wav_t * openWav( const char * p_filePath )
     int  read_len = 0;
     int  offset = 0;
     wav_t * t_result = (wav_t *)malloc( sizeof(wav_t) );
-    FILE * t_fp = nullptr;
+    FILE * t_fp = NULL;
 
     bool t_parseWavRes = false;
 
@@ -123,7 +125,7 @@ wav_t * openWav( const char * p_filePath )
     if( t_fp )
     {
         fclose(t_fp);
-        t_fp = nullptr;
+        t_fp = NULL;
     }
 
     return t_result;
@@ -142,11 +144,11 @@ bool closeWav( wav_t ** p_wav )
     if( t_wav->data_buffer )
     {
         free( t_wav->data_buffer );
-        t_wav->data_buffer = nullptr;
+        t_wav->data_buffer = NULL;
     }
 
     free( t_wav );
-    t_wav = nullptr;
+    t_wav = NULL;
 
     return true;
 }

@@ -12,7 +12,7 @@
 #include "alsa-test.h"
 
 
-#define nullptr NULL
+#define NULL NULL
 
 using std::cout;
 using std::endl;
@@ -91,7 +91,7 @@ int main(int argc, char ** argv)
 
     //     if( !strcmp( cmdBuffer, "b" ) )
     //     {
-    //         if( !pthread_create(&pthread_id, nullptr, playWav, (void *)s_wav_b) )
+    //         if( !pthread_create(&pthread_id, NULL, playWav, (void *)s_wav_b) )
     //         {
     //             cout << "playing B.wav ..." << endl;
     //         }
@@ -100,7 +100,7 @@ int main(int argc, char ** argv)
 
     //     if( !strcmp( cmdBuffer, "t" ) )
     //     {
-    //         if( !pthread_create(&pthread_id, nullptr, playWav, (void *)s_wav_t) )
+    //         if( !pthread_create(&pthread_id, NULL, playWav, (void *)s_wav_t) )
     //         {
     //             cout << "playing T.wav ..." << endl;
     //         }
@@ -109,7 +109,7 @@ int main(int argc, char ** argv)
 
     //     // if( !strcmp( cmdBuffer, "s" ) )
     //     // {
-    //         if( !pthread_create(&pthread_id, nullptr, playWav, (void *)s_wav_s) )
+    //         if( !pthread_create(&pthread_id, NULL, playWav, (void *)s_wav_s) )
     //         {
     //             cout << "playing S.wav ..." << endl;
     //         }
@@ -292,7 +292,7 @@ void openserial( void )
                         cout << "play time space: " << t_time_diff << endl;
                         cout.setf( std::ios_base::hex, std::ios_base::basefield);
 
-                        if( !pthread_create(&pthread_id, nullptr, playWav, (void *)s_wav_s) )
+                        if( !pthread_create(&pthread_id, NULL, playWav, (void *)s_wav_s) )
                         {
                             cout << "playing S.wav ..." << endl;
                         }
@@ -332,7 +332,7 @@ wav_t * openwav( const char * p_filePath )
     if(!wav)
     {
         cout << "Error malloc wav failedly" << endl;
-        return nullptr;
+        return NULL;
     }
     bzero(wav, sizeof(wav_t));
 
@@ -340,7 +340,7 @@ wav_t * openwav( const char * p_filePath )
     if(!wav->fp)
     {
         cout << "open " << p_filePath << "failed" << endl;
-        return nullptr;
+        return NULL;
     }
 
     read_len = fread(buffer, 1, 12, wav->fp);
@@ -348,14 +348,14 @@ wav_t * openwav( const char * p_filePath )
     {
         cout << "error wav file" << endl;
         closewav( &wav );
-        return nullptr;
+        return NULL;
     }
 
     if(strncasecmp("RIFF", buffer, 4))
     {
         cout << "file style is not wav" << endl;
         closewav( &wav );
-        return nullptr;
+        return NULL;
     }
 
     memcpy(wav->riff.id, buffer, 4); 
@@ -364,7 +364,7 @@ wav_t * openwav( const char * p_filePath )
     {
         cout << "Error wav file" << endl;
         closewav( &wav );
-        return nullptr;
+        return NULL;
     }
 
     memcpy(wav->riff.type, buffer + 8, 4);
@@ -381,7 +381,7 @@ wav_t * openwav( const char * p_filePath )
         {
             cout << "Error wav file" << endl;
             closewav( &wav );
-            return nullptr;
+            return NULL;
         }
         memcpy(id_buffer, buffer, 4);
         tmp_size = *(int *)(buffer + 4);
@@ -395,7 +395,7 @@ wav_t * openwav( const char * p_filePath )
             {
                 cout << "Error wav file" << endl;
                 closewav( &wav );
-                return nullptr;
+                return NULL;
             }
             wav->format.compression_code  = *(short *)buffer;
             wav->format.channels          = *(short *)(buffer + 2);
@@ -431,7 +431,7 @@ wav_t * openwav( const char * p_filePath )
     }
 
     fclose( wav->fp );
-    wav->fp = nullptr;
+    wav->fp = NULL;
 
     return wav;
 }
@@ -448,16 +448,16 @@ void closewav( wav_t ** p_wav )
     if( wav->data_buffer )
     {
         free( wav->data_buffer );
-        wav->data_buffer = nullptr;
+        wav->data_buffer = NULL;
     }
 
     if(wav->fp)
     {
         fclose(wav->fp);
-        wav->fp = nullptr;
+        wav->fp = NULL;
     }
     free( wav );
-    wav = nullptr;
+    wav = NULL;
 
     cout << "closewav end" << endl;
 }
@@ -639,7 +639,7 @@ void * playWav( void * p_wav )
 
     if( !wav )
     {
-        return nullptr;
+        return NULL;
     }
 
     int ret;
@@ -652,14 +652,14 @@ void * playWav( void * p_wav )
     gettimeofday( &t_callPlay, NULL );
     cout << "----> call play " << t_callPlay.tv_sec - t_start.tv_sec + (t_callPlay.tv_usec - t_start.tv_usec)/1000000.0f << endl;
 
-    pcm_handle_t * pcm_handle = nullptr;
+    pcm_handle_t * pcm_handle = NULL;
 
     for( int i = 0; i < PCM_HANDLE_POOL_SIZE; ++i )
     {
-        if( s_pcm_handle_pool[i] != nullptr )
+        if( s_pcm_handle_pool[i] != NULL )
         {
             pcm_handle = s_pcm_handle_pool[i];
-            s_pcm_handle_pool[i] = nullptr;
+            s_pcm_handle_pool[i] = NULL;
             break;
         }
     }
@@ -667,7 +667,7 @@ void * playWav( void * p_wav )
     if( !pcm_handle )
     {
         cout << "----> not find pcm_handle" << endl;
-        return nullptr;
+        return NULL;
     }
 
     gettimeofday( &t_playStart, NULL );
@@ -713,7 +713,7 @@ void * playWav( void * p_wav )
 
     for( int i = 0; i < PCM_HANDLE_POOL_SIZE; ++i )
     {
-        if( s_pcm_handle_pool[i] == nullptr )
+        if( s_pcm_handle_pool[i] == NULL )
         {
             pcm_handle_t * t_handle = (pcm_handle_t*)malloc( sizeof( pcm_handle_t ) );
             open_pcm( t_handle, wav );
@@ -721,7 +721,7 @@ void * playWav( void * p_wav )
         }
     }
 
-    return nullptr;
+    return NULL;
 }
 
 void * randomPlay(void * s)
@@ -740,13 +740,13 @@ void * randomPlay(void * s)
         memset( buffer, 0, sizeof(buffer) );
         sprintf(buffer,"%d",index);
         wav_path = string("/usr/bin/audio/") + string(buffer) + ".wav";
-        if( !pthread_create(&pthread_id, nullptr, playWav, (void *)wav_path.c_str()) )
+        if( !pthread_create(&pthread_id, NULL, playWav, (void *)wav_path.c_str()) )
         {
             cout << "playing " << wav_path << "..." << endl;
         }
         usleep( _sleep );
     }
 
-    return nullptr;
+    return NULL;
 }
 

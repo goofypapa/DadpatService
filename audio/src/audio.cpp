@@ -8,15 +8,21 @@ int audio::sm_audioId = 0;
 std::map< int, wav_t * > audio::sm_audioCachePool;
 std::map< std::string, int > audio::sm_audioPathCachePool;
 
-std::mutex audio::sm_cacheUncacheMutex;
+pthread_mutex_t audio::sm_cacheUncacheMutex;
+
+
+bool audio::init( void )
+{
+    pthread_mutex_init( &sm_cacheUncacheMutex, NULL );
+}
 
 int audio::cache( const std::string & p_audioFile )
 {
     int t_audioId = sm_audioId;
 
-    sm_cacheUncacheMutex.lock();
+    pthread_mutex_lock( &sm_cacheUncacheMutex );
 
-    auto t_it = sm_audioCachePool.find( t_audioId );
+    std::map<int, wav_t *>::iterator t_it = sm_audioCachePool.find( t_audioId );
     if( t_it != sm_audioCachePool.end() )
     {
         closeWav( &t_it->second );
@@ -24,7 +30,7 @@ int audio::cache( const std::string & p_audioFile )
 
     do
     {
-        auto t_findAudioId = sm_audioPathCachePool.find( p_audioFile );
+        std::map<std::string, int>::iterator t_findAudioId = sm_audioPathCachePool.find( p_audioFile );
         if( t_findAudioId != sm_audioPathCachePool.end() )
         {
             t_audioId = t_findAudioId->second;
@@ -45,7 +51,7 @@ int audio::cache( const std::string & p_audioFile )
         sm_audioId ++;
     }while(0);
 
-    sm_cacheUncacheMutex.unlock();
+    pthread_mutex_unlock( &sm_cacheUncacheMutex );
     
     return t_audioId;
 }
@@ -55,10 +61,10 @@ bool audio::uncache( const int p_audioId )
 {
     bool t_result = false;
 
-    sm_cacheUncacheMutex.lock();
+    pthread_mutex_lock( &sm_cacheUncacheMutex );
 
     do{
-        auto t_it = sm_audioCachePool.find( p_audioId );
+        std::map<int, wav_t *>::iterator t_it = sm_audioCachePool.find( p_audioId );
         if( t_it == sm_audioCachePool.end() )
         {
             break;
@@ -68,7 +74,7 @@ bool audio::uncache( const int p_audioId )
         sm_audioCachePool.erase( t_it );
 
     }while(0);
-    sm_cacheUncacheMutex.unlock();
+    pthread_mutex_unlock( &sm_cacheUncacheMutex );
 
     return t_result;
 }
@@ -79,10 +85,10 @@ bool audio::uncache( const std::string & p_audioFile )
     bool t_result = false;
     int t_audioId = -1;
 
-    sm_cacheUncacheMutex.lock();
+    pthread_mutex_lock( &sm_cacheUncacheMutex );
     do{
 
-        auto t_it = sm_audioPathCachePool.find( p_audioFile );
+        std::map<std::string, int>::iterator t_it = sm_audioPathCachePool.find( p_audioFile );
         if( t_it == sm_audioPathCachePool.end() )
         {
            break;
@@ -92,7 +98,7 @@ bool audio::uncache( const std::string & p_audioFile )
         sm_audioPathCachePool.erase(t_it);
         
     }while(0);
-    sm_cacheUncacheMutex.unlock();
+    pthread_mutex_unlock( &sm_cacheUncacheMutex );
 
     if( t_audioId != -1 )
     {
@@ -106,7 +112,7 @@ bool audio::uncache( const std::string & p_audioFile )
 int audio::play( int p_audioId, int p_playGroup )
 {
 
-    auto t_it = sm_audioCachePool.find( p_audioId );
+    std::map<int, wav_t *>::iterator t_it = sm_audioCachePool.find( p_audioId );
 
     if( t_it == sm_audioCachePool.end() )
     {

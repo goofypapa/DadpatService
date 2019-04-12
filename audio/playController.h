@@ -4,6 +4,7 @@
 #include "wav.h"
 #include "audioPcm.h"
 #include <map>
+#include <queue>
 
 class playController
 {

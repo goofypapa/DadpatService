@@ -1,9 +1,15 @@
 #include <iostream>
 #include "audio.h"
 #include "log.h"
+#include "audioPcm.h"
 
 int main( int argc, char ** argv )
 {
+
+
+    info( "start" );
+
+    assert( audioPcmInitPcmPoll() );
 
     int t_audiooId = audio::cache("audios/djembe/B.wav");
 

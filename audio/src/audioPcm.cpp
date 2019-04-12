@@ -1,7 +1,52 @@
 #include "audioPcm.h"
 #include "log.h"
 
+#define PCM_POLL_MAX_COUNT 6
+
+
+#define PCM_DEFAULT_BIT 16
+#define PCM_DEFAULT_DATABLOCK 4
+#define PCM_DEFAULT_RATE 44100
+#define PCM_DEFAULT_CHANNELS 2
+
+std::queue< pcm_handle_t * > s_audioPcmPool;
+
+
+bool audioPcmInitPcmPoll( void )
+{
+
+    pcm_handle_t * t_pcm_handle = NULL;
+
+    while( s_audioPcmPool.size() < PCM_POLL_MAX_COUNT )
+    {
+        info( "-------------> " << s_audioPcmPool.size() );
+        t_pcm_handle = _openPcm( PCM_DEFAULT_BIT, PCM_DEFAULT_DATABLOCK, PCM_DEFAULT_RATE, PCM_DEFAULT_CHANNELS );
+        assert( t_pcm_handle );
+        s_audioPcmPool.push( t_pcm_handle );
+    }
+
+    return true;
+}
+
 pcm_handle_t * openPcm( int p_bit, int p_datablock, int p_rate, int p_channels )
+{
+    pcm_handle_t * t_result = NULL;
+
+    if( p_bit == PCM_DEFAULT_BIT && p_datablock == PCM_DEFAULT_DATABLOCK && p_rate == PCM_DEFAULT_RATE && p_channels == PCM_DEFAULT_CHANNELS )
+    {
+        if( s_audioPcmPool.size() )
+        {
+            t_result = s_audioPcmPool.front();
+            s_audioPcmPool.pop();
+        }
+    }else{
+        t_result = _openPcm( p_bit, p_datablock, p_rate, p_channels );
+    }
+
+    return t_result;
+}
+
+pcm_handle_t * _openPcm( int p_bit, int p_datablock, int p_rate, int p_channels )
 {
     int t_rc, t_monotonic = 0;
     pcm_handle_t * t_result = ( pcm_handle_t * )malloc( sizeof( pcm_handle_t ) );
@@ -113,6 +158,7 @@ pcm_handle_t * openPcm( int p_bit, int p_datablock, int p_rate, int p_channels )
 
     } while ( 0 );
 
+
     if( t_rc <  0 )
     {
         closePcm( &t_result );
@@ -134,8 +180,12 @@ bool closePcm( pcm_handle_t ** p_pcm_handle )
         snd_pcm_close( t_pcm->handle );
 
         free( t_pcm );
-        t_pcm = nullptr;
+        t_pcm = NULL;
     }
+
+    pcm_handle_t * t_pcm_handle = _openPcm( PCM_DEFAULT_BIT, PCM_DEFAULT_DATABLOCK, PCM_DEFAULT_RATE, PCM_DEFAULT_CHANNELS );
+    assert( t_pcm_handle );
+    s_audioPcmPool.push( t_pcm_handle );
 
     return true;
 }
