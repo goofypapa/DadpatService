@@ -6,7 +6,6 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstring>
-#include <pthread.h>
 
 #define SERIAL_DEVICE_NAME "/dev/ttyUSB0"
 #define SERIAL_SPEED 115200
@@ -15,14 +14,28 @@
 #define SERIAL_STOP_BITS 0
 
 std::vector< serial::recvFunc > serial::sm_recvFuncList;
-// std::queue< std::pair< unsigned char *, int > > serial::sm_sendDataPool;
+std::queue< std::pair< unsigned char *, int > > serial::sm_sendDataPool;
 int serial::sm_fd;
+pthread_mutex_t serial::sm_recvFuncMutex, serial::sm_sendDataMutex;
+
 
 bool serial::init( void )
 {
 
     int ret;
     pthread_t pthread_id;
+
+    if( pthread_mutex_init(&sm_recvFuncMutex, NULL) )
+    {
+        err( " sm_recvFuncMutex init final " );
+        return false;
+    }
+
+    if( pthread_mutex_init(&sm_sendDataMutex, NULL) )
+    {
+        err( " sm_sendDataMutex init final " );
+        return false;
+    }
 
     sm_fd = open("/dev/ttyUSB0", O_RDWR|O_NOCTTY);
     if( sm_fd == -1 )
@@ -51,10 +64,6 @@ bool serial::init( void )
 
 bool serial::send( const unsigned char * p_data, const size_t p_dataSize )
 {
-    // unsigned char * t_data = (unsigned char *)malloc( p_dataSize );
-    // memcpy( t_data, p_data, p_dataSize );
-
-    // sm_sendDataPool.push( std::pair< unsigned char *, int >( t_data, p_dataSize ) );
 
     if( !p_data )
     {
@@ -62,7 +71,28 @@ bool serial::send( const unsigned char * p_data, const size_t p_dataSize )
         return false;
     }
 
-    write( sm_fd, p_data, p_dataSize );
+    unsigned char * t_data = (unsigned char *)malloc( p_dataSize );
+    memcpy( t_data, p_data, p_dataSize );
+
+
+    pthread_mutex_lock( &sm_sendDataMutex );
+    sm_sendDataPool.push( std::pair< unsigned char *, int >( t_data, p_dataSize ) );
+    pthread_mutex_unlock( &sm_sendDataMutex );
+
+    return true;
+}
+
+
+bool serial::setRecvFunc( const serial::recvFunc p_recvFunc )
+{
+    if( !p_recvFunc )
+    {
+        return false;
+    }
+
+    pthread_mutex_lock( &sm_recvFuncMutex );
+    sm_recvFuncList.push_back( p_recvFunc );
+    pthread_mutex_unlock( &sm_recvFuncMutex );
 
     return true;
 }
@@ -77,9 +107,6 @@ void * serial::threadFunc( void * p_param )
     unsigned char t_cmdType = 0;
 
     int t_cmdCount = -1;
-
-    std::cout.setf(std::ios::showbase); 
-    std::cout.setf( std::ios_base::hex, std::ios_base::basefield); 
 
     while( true )
     {
@@ -114,23 +141,40 @@ void * serial::threadFunc( void * p_param )
 
                 if( cmd_buffer_cursor == t_cmdCount )
                 {
-                    std::cout << "cmd: ";
-                    for( int n = 0; n < 10; ++n )
-                    {
-                        std::cout << (unsigned short)cmd_buffer[n] << " ";
-                    }
-                    std::cout << std::endl;
+                    eventRecv( cmd_buffer, cmd_buffer_cursor );
+
                     cmd_buffer_cursor = 0;
                 }
             }
         }else{
-            info( "--------------------------->" );
             usleep( 1000 );
         }
+
+        pthread_mutex_lock( &sm_sendDataMutex );
+        while( sm_sendDataPool.size() )
+        {
+            std::pair< unsigned char *, int > t_item = sm_sendDataPool.front();
+            sm_sendDataPool.pop();
+
+            write( sm_fd, t_item.first, t_item.second );
+        }
+        pthread_mutex_unlock( &sm_sendDataMutex );
+
         usleep( 100 );
     }
 
     return NULL;
+}
+
+
+void serial::eventRecv( const unsigned char * p_data, const size_t p_dataSize )
+{
+    pthread_mutex_lock( &sm_recvFuncMutex );
+    for( int i = 0; i < sm_recvFuncList.size(); ++i )
+    {
+        sm_recvFuncList[i]( p_data, p_dataSize );
+    }
+    pthread_mutex_unlock( &sm_recvFuncMutex );
 }
 
 int serial::set_opt(int fd,int nSpeed,int nBits,char nEvent,int nStop)
