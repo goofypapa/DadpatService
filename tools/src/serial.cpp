@@ -10,8 +10,8 @@
 #define SERIAL_DEVICE_NAME "/dev/ttyUSB0"
 #define SERIAL_SPEED 115200
 #define SERIAL_BITS 8
-#define SERIAL_CHECK_TYPE 'N'
-#define SERIAL_STOP_BITS 0
+#define SERIAL_CHECK_TYPE 'O'
+#define SERIAL_STOP_BITS 1
 
 std::vector< serial::recvFunc > serial::sm_recvFuncList;
 std::queue< std::pair< unsigned char *, int > > serial::sm_sendDataPool;
@@ -108,6 +108,7 @@ void * serial::threadFunc( void * p_param )
 
     int t_cmdCount = -1;
 
+
     while( true )
     {
         ret = read( sm_fd, Rx_Data, 100 );
@@ -115,7 +116,6 @@ void * serial::threadFunc( void * p_param )
         {
             for( int i = 0; i < ret; ++i )
             {
-
                 if( cmd_buffer_cursor == 0 && Rx_Data[i] != 0xBA )
                 {
                     continue;
@@ -146,6 +146,8 @@ void * serial::threadFunc( void * p_param )
                     cmd_buffer_cursor = 0;
                 }
             }
+
+            // eventRecv( Rx_Data, ret );
         }else{
             usleep( 1000 );
         }
@@ -192,7 +194,7 @@ int serial::set_opt(int fd,int nSpeed,int nBits,char nEvent,int nStop)
 
     newtio.c_lflag &=~ICANON;//原始模式
 
-    //newtio.c_lflag |=ICANON; //标准模式
+    // newtio.c_lflag |=ICANON; //标准模式
 
     //设置串口数据位
     switch(nBits)
@@ -211,7 +213,7 @@ int serial::set_opt(int fd,int nSpeed,int nBits,char nEvent,int nStop)
         case 'O':
             newtio.c_cflag |= PARENB;
             newtio.c_cflag |= PARODD;
-            newtio.c_iflag |= (INPCK | ISTRIP);
+            // newtio.c_iflag |= (INPCK | ISTRIP);
             break;
         case 'E':
             newtio.c_iflag |= (INPCK | ISTRIP);

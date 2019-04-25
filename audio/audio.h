@@ -2,9 +2,11 @@
 #define __AUDIO_H__
 
 #include "wav.h"
+#include "play_controller.h"
 #include <string>
 #include <map>
 #include <pthread.h>
+#include <vector>
 
 class audio
 {
@@ -30,11 +32,15 @@ public:
 
 private:
 
-    static int sm_audioId;
+    static void playStateChangeed( const int p_playId, const playController::PlayState p_playState );
+
+    static int sm_audioId, sm_playId;
     static pthread_mutex_t sm_cacheUncacheMutex;
     
     static std::map< int, wav_t * > sm_audioCachePool;
     static std::map< std::string, int > sm_audioPathCachePool;
+
+    static std::vector<int> sm_playingList;
 };
 
 #endif //__AUDIO_H__

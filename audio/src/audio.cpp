@@ -1,22 +1,28 @@
 #include "audio.h"
 #include <iostream>
 #include <cstring>
-#include "play_controller.h"
 #include "log.h"
 
 
-int audio::sm_audioId = 0;
+#define MAX_PLAY_COUT 1
+
+int audio::sm_audioId = 0, audio::sm_playId = 0;
 std::map< int, wav_t * > audio::sm_audioCachePool;
 std::map< std::string, int > audio::sm_audioPathCachePool;
+std::vector<int> audio::sm_playingList;
 
 pthread_mutex_t audio::sm_cacheUncacheMutex;
-
 
 bool audio::init( void )
 {
     pthread_mutex_init( &sm_cacheUncacheMutex, NULL );
 
     if( !audioPcmInitPcmPoll() )
+    {
+        return false;
+    }
+
+    if( !playController::init( playStateChangeed ) )
     {
         return false;
     }
@@ -120,6 +126,8 @@ bool audio::uncache( const std::string & p_audioFile )
 int audio::play( int p_audioId, int p_playGroup )
 {
 
+    int t_playId = sm_playId++;
+
     std::map<int, wav_t *>::iterator t_it = sm_audioCachePool.find( p_audioId );
 
     if( t_it == sm_audioCachePool.end() )
@@ -127,7 +135,40 @@ int audio::play( int p_audioId, int p_playGroup )
         return -1;
     }
 
-    info( "find audio source" );
+    return playController::play( t_playId, t_it->second );
+}
 
-    return playController::play( t_it->first, t_it->second );
+
+bool audio::stop( int p_playId )
+{
+    return playController::stop( p_playId );
+}
+
+
+
+void audio::playStateChangeed( const int p_playId, const playController::PlayState p_playState )
+{
+    
+    if( p_playState == playController::Playing )
+    {
+        info( "-------------->>" << (int)sm_playingList.size() - MAX_PLAY_COUT );
+        for( int i = 0; i < (int)sm_playingList.size() - MAX_PLAY_COUT; ++i )
+        {
+            playController::stop( sm_playingList[i] );
+        }
+
+        sm_playingList.push_back( p_playId );
+    }
+    else if( p_playState == playController::End )
+    {
+        
+        for( std::vector< int >::iterator t_item = sm_playingList.begin(); t_item < sm_playingList.end(); ++ t_item )
+        {
+            if( *t_item == p_playId )
+            {
+                sm_playingList.erase( t_item );
+            }
+        }
+    }
+    info( "-------------> playId: " << p_playId << ", playState: " << p_playState );
 }

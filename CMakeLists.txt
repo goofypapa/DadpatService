@@ -9,10 +9,10 @@ set(DADPATSERVICE_VERSION_FULL ${DADPATSERVICE_VERSION}.${DADPATSERVICE_VERSION_
 
 project(DadpatService VERSION ${DADPATSERVICE_VERSION})
 
-option(X86_64 "编译x86_64架构程序" ON)
+option(X86_64 "编译x86_64架构程序" OFF)
 
-set(CMAKE_C_COMPILER arm-linux-gcc)
-set(CMAKE_CXX_COMPILER arm-linux-g++)
+set(CMAKE_C_COMPILER aarch64-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER aarch64-linux-gnu-g++)
 
 if(X86_64)
     set(CMAKE_C_COMPILER gcc)
@@ -20,10 +20,6 @@ if(X86_64)
 else()
     # this is required
     set(CMAKE_SYSTEM_NAME Linux)
-
-    # specify the cross compiler
-    set(CMAKE_C_COMPILER   arm-linux-gnueabi-gcc)
-    set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
 
     # add_definitions(-std=c++11)
 

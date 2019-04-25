@@ -3,6 +3,7 @@
 #include "log.h"
 #include "audio_pcm.h"
 #include "serial.h"
+#include <vector>
 
 
 unsigned char startCmd[] = { (unsigned char)0xAB, (unsigned char)0x01, (unsigned char)0x01 };
@@ -66,9 +67,15 @@ int main( int argc, char ** argv )
 
         int t_id = atoi( buffer );
 
-        info( "try play " << t_id );
 
-        audio::play( t_id );
+
+        if( t_id < 5 )
+        {
+            info( "try play " << t_id );
+            audio::play( t_id );
+        }else{
+            audio::stop( t_id );
+        }
 
     }
 
@@ -82,7 +89,7 @@ void serialRecv( const unsigned char * p_data, const size_t p_dataSize )
     gettimeofday( &t_curr_recv_time, NULL );
 
     int t_time_diff = (t_curr_recv_time.tv_sec - t_prve_recv_time.tv_sec) * 1000000 + t_curr_recv_time.tv_usec - t_prve_recv_time.tv_usec;
-    if( t_time_diff < 10000 )
+    if( t_time_diff < 60000 )
     {
         return;
     }
@@ -90,7 +97,65 @@ void serialRecv( const unsigned char * p_data, const size_t p_dataSize )
     t_prve_recv_time = t_curr_recv_time;
     info( "recv time space: " << t_time_diff );
 
-    audio::play( 1 );
+    info( "ad: " << (unsigned short)*( p_data + 5 ) );
+    info( "ad: " << (unsigned short)*( p_data + 6 ) );
+    info( "ad: " << (unsigned short)*( p_data + 7 ) );
+    info( "ad: " << (unsigned short)*( p_data + 8 ) );
+
+
+    bool t_insideTouch = false;
+    std::vector< unsigned > t_midAreas, t_outsideAreas;
+
+    for( int n = 0; n < 3; ++n )
+    {
+        for( int i = 0; i < 8; ++i )
+        {
+            int t_id =  n * 8 + i;
+
+            if( t_id > 20 )
+            {
+                break;
+            }
+
+            if( !( *( p_data + 2 + n ) & ( 1 << ( 7 - i ) ) ) )
+            {
+                continue;
+            }
+
+            info( "touched: " << t_id );
+
+            if( t_id == 20 )
+            {
+                t_insideTouch = true;
+                continue;
+            }
+
+            if( t_id < 12 )
+            {
+                t_outsideAreas.push_back( t_id );
+                continue;
+            }
+            if( t_id < 20 )
+            {
+                t_midAreas.push_back( t_id );
+                continue;
+            }
+        }
+    }
+
+    int t_outAreaSize = t_outsideAreas.size();
+    int t_midAreaSize = t_midAreas.size();
+
+    if( t_insideTouch && ( t_outAreaSize <= 0 && t_midAreaSize <= 0 || t_midAreaSize > t_outAreaSize ) )
+    {
+        audio::play( 0 );
+    }else if( t_midAreaSize && ( !t_outAreaSize || (float)t_midAreaSize / (float)t_outAreaSize > 1.0f / 3.0f ) )
+    {
+        audio::play( 1 );
+    }else{
+        audio::play( 2 );
+    }
+
 
     // std::cout << "cmd: ";
     // for( int n = 0; n < p_dataSize; ++n )
